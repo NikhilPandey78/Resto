@@ -9,8 +9,8 @@ export function LoginPage() {
   const { signIn } = useAuth();
   const toast = useToast();
   const navigate = useNavigate();
-  const [email, setEmail] = useState('demo@spicegarden.in');
-  const [password, setPassword] = useState('demo1234');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -141,11 +141,6 @@ export function LoginPage() {
               {!loading && <ArrowRight className="h-4 w-4" />}
             </Button>
           </form>
-
-          <div className="mt-6 rounded-lg bg-blue-50 border border-blue-100 px-4 py-3">
-            <p className="text-xs text-blue-700 font-medium">Demo Account</p>
-            <p className="text-xs text-blue-600 mt-0.5">demo@spicegarden.in · demo1234</p>
-          </div>
 
           <p className="mt-6 text-center text-sm text-slate-500">
             Don't have an account?{' '}

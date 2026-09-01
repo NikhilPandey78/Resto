@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Package, ArrowDownToLine, ArrowUpFromLine, ArrowLeftRight,
   SlidersHorizontal, ClipboardCheck, Tags, Ruler, Truck, ShoppingCart,
   Undo2, ChefHat, CookingPot, UtensilsCrossed, TrendingDown, CalendarClock,
-  FileBarChart, Building2, Users, Bell, History, Settings, HelpCircle,
+  FileBarChart, Building2, Users, Bell, History, Settings, HelpCircle, BrainCircuit, Banknote, ReceiptText, Armchair,
   Menu, X, LogOut, ChevronDown, CreditCard, Search,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
@@ -36,9 +36,14 @@ const navItems: NavItem[] = [
   { label: 'Recipes', icon: CookingPot, path: '/recipes', group: 'Kitchen' },
   { label: 'Menu Items', icon: UtensilsCrossed, path: '/menu-items', group: 'Kitchen' },
   { label: 'Consumption', icon: TrendingDown, path: '/consumption', group: 'Kitchen' },
+  { label: 'Food Cost', icon: Banknote, path: '/food-cost', group: 'Kitchen' },
   { label: 'Wastage', icon: TrendingDown, path: '/wastage', group: 'Kitchen' },
   { label: 'Expiry Management', icon: CalendarClock, path: '/expiry', group: 'Kitchen' },
   { label: 'Reports', icon: FileBarChart, path: '/reports', group: 'Insights' },
+  { label: 'AI Insights', icon: BrainCircuit, path: '/ai-insights', group: 'Insights' },
+  { label: 'Sales / POS', icon: Banknote, path: '/sales', group: 'Insights' },
+  { label: 'KOT', icon: ReceiptText, path: '/kot', group: 'Insights' },
+  { label: 'Tables', icon: Armchair, path: '/tables', group: 'Insights' },
   { label: 'Branches', icon: Building2, path: '/branches', group: 'Administration' },
   { label: 'Users', icon: Users, path: '/users', group: 'Administration' },
   { label: 'Notifications', icon: Bell, path: '/notifications', group: 'Administration' },
@@ -48,6 +53,7 @@ const navItems: NavItem[] = [
 ];
 
 const groups = ['Overview', 'Inventory', 'Procurement', 'Kitchen', 'Insights', 'Administration'];
+const comingSoonPaths = new Set(['/ai-insights', '/sales', '/kot', '/tables']);
 
 export function AppLayout() {
   const navigate = useNavigate();
@@ -113,6 +119,7 @@ export function AppLayout() {
                       >
                         <item.icon className={cn('h-4 w-4 flex-shrink-0', active ? 'text-blue-600' : 'text-slate-400')} />
                         <span className="truncate">{item.label}</span>
+                        {comingSoonPaths.has(item.path) && <span className="ml-auto rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-semibold text-slate-500">Soon</span>}
                       </button>
                     );
                   })}

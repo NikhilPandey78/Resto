@@ -13,7 +13,6 @@
     "moduleDetection": "force",
     "noEmit": true,
     "jsx": "react-jsx",
-    "ignoreDeprecations": "6.0",
 
     /* Path alias — depth-invariant imports for src (@/foo === src/foo from any file) */
     "baseUrl": ".",

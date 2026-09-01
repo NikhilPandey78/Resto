@@ -81,6 +81,17 @@ export interface Unit {
   created_at: string;
 }
 
+export interface UnitConversion {
+  id: string;
+  restaurant_id: string;
+  from_unit_id: string;
+  to_unit_id: string;
+  factor: number;
+  created_at?: string;
+  from_unit?: Unit;
+  to_unit?: Unit;
+}
+
 export interface Supplier {
   id: string;
   restaurant_id: string;

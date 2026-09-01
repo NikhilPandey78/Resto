@@ -27,7 +27,7 @@ export function ReportsPage() {
   const toast = useToast();
   const [loading, setLoading] = useState(true);
   const [activeReport, setActiveReport] = useState('inventory');
-  const [data, setData] = useState<Record<string, unknown>[]>([]);
+  const [data, setData] = useState<(Record<string, unknown> & { id: string })[]>([]);
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [suppliers, setSuppliers] = useState<{ id: string; name: string }[]>([]);
   const [branches, setBranches] = useState<{ id: string; name: string }[]>([]);
@@ -58,7 +58,7 @@ export function ReportsPage() {
     if (filters.dateFrom && (report.module === 'stock_transactions' || report.module === 'stock_receipts' || report.module === 'wastage_records')) query = query.gte('created_at', filters.dateFrom);
     if (filters.dateTo && (report.module === 'stock_transactions' || report.module === 'stock_receipts' || report.module === 'wastage_records')) query = query.lte('created_at', filters.dateTo + 'T23:59:59');
     const { data: result } = await query.order('created_at', { ascending: false }).limit(100);
-    setData((result as Record<string, unknown>[]) || []);
+    setData(((result || []) as (Record<string, unknown> & { id: string })[]));
     setLoading(false);
   }, [restaurant, activeReport, filters]);
 

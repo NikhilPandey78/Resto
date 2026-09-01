@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode, useCallback 
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { Restaurant, RestaurantUser, Subscription } from '@/lib/types';
+import { api, isApiUnavailable } from '@/lib/api';
 
 interface AuthContextValue {
   session: Session | null;
@@ -18,6 +19,7 @@ interface AuthContextValue {
 
 const DEMO_EMAIL = 'demo@spicegarden.in';
 const DEMO_PASSWORD = 'demo1234';
+const DEMO_SESSION_STORAGE_KEY = 'stocksage_demo_session';
 const DEMO_USER_ID = '00000000-0000-0000-0000-000000000001';
 const DEMO_RESTAURANT_ID = '00000000-0000-0000-0000-000000000002';
 
@@ -62,6 +64,7 @@ const DEMO_SUBSCRIPTION: Subscription = {
   expiry_date: new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10),
   billing_cycle: 'monthly',
   amount: 0,
+  currency: 'INR',
   auto_renewal: false,
   max_branches: 1,
   max_users: 3,
@@ -80,6 +83,15 @@ const DEMO_USER = {
 
 const isDemoLogin = (email: string, password: string) => email.trim().toLowerCase() === DEMO_EMAIL && password === DEMO_PASSWORD;
 
+const createDemoSession = (): Session => ({
+  access_token: 'demo-access-token',
+  refresh_token: 'demo-refresh-token',
+  expires_in: 3600,
+  expires_at: Math.floor((Date.now() + 3600000) / 1000),
+  token_type: 'bearer',
+  user: DEMO_USER,
+} as Session);
+
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -90,7 +102,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const restoreDemoSession = useCallback(() => {
+    const demoSession = createDemoSession();
+    setSession(demoSession);
+    setUser(DEMO_USER);
+    setRestaurant(DEMO_RESTAURANT);
+    setRestaurantUser(DEMO_RESTAURANT_USER);
+    setSubscription(DEMO_SUBSCRIPTION);
+  }, []);
+
   const loadProfile = useCallback(async (uid: string) => {
+    try {
+      const profile = await api.get<{ restaurant?: Restaurant; user?: RestaurantUser; subscription?: Subscription | null }>('/auth/me');
+      if (profile.restaurant) setRestaurant(profile.restaurant);
+      if (profile.user) setRestaurantUser(profile.user);
+      if (profile.subscription !== undefined) setSubscription(profile.subscription);
+      return;
+    } catch (error) {
+      if (!isApiUnavailable(error)) {
+        setRestaurant(null);
+        setRestaurantUser(null);
+        setSubscription(null);
+        return;
+      }
+    }
+
     const { data: ru, error: ruError } = await supabase
       .from('restaurant_users')
       .select('*')
@@ -127,6 +163,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(session?.user ?? null);
       if (session?.user) {
         loadProfile(session.user.id).finally(() => setLoading(false));
+      } else if (sessionStorage.getItem(DEMO_SESSION_STORAGE_KEY) === 'active') {
+        restoreDemoSession();
+        setLoading(false);
       } else {
         setLoading(false);
       }
@@ -140,6 +179,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           await loadProfile(session.user.id);
           setLoading(false);
         })();
+      } else if (sessionStorage.getItem(DEMO_SESSION_STORAGE_KEY) === 'active') {
+        restoreDemoSession();
+        setLoading(false);
       } else {
         setRestaurant(null);
         setRestaurantUser(null);
@@ -149,26 +191,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return () => listener.subscription.unsubscribe();
-  }, [loadProfile]);
+  }, [loadProfile, restoreDemoSession]);
 
   const signIn = async (email: string, password: string) => {
     const normalizedEmail = email.trim().toLowerCase();
 
     if (isDemoLogin(normalizedEmail, password)) {
-      const demoSession = {
-        access_token: 'demo-access-token',
-        refresh_token: 'demo-refresh-token',
-        expires_in: 3600,
-        expires_at: Math.floor((Date.now() + 3600000) / 1000),
-        token_type: 'bearer',
-        user: DEMO_USER,
-      } as Session;
-
-      setSession(demoSession);
-      setUser(DEMO_USER);
-      setRestaurant(DEMO_RESTAURANT);
-      setRestaurantUser(DEMO_RESTAURANT_USER);
-      setSubscription(DEMO_SUBSCRIPTION);
+      sessionStorage.setItem(DEMO_SESSION_STORAGE_KEY, 'active');
+      restoreDemoSession();
       setLoading(false);
       return { error: null };
     }
@@ -217,6 +247,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    sessionStorage.removeItem(DEMO_SESSION_STORAGE_KEY);
     setSession(null);
     setUser(null);
     setRestaurant(null);

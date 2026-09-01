@@ -15,7 +15,7 @@ export function PageHeader({ title, description, action }: { title: string; desc
 export function StatCard({ icon: Icon, label, value, sublabel, color = 'blue', trend }: {
   icon: React.ElementType;
   label: string;
-  value: string | number;
+  value: ReactNode;
   sublabel?: string;
   color?: 'blue' | 'green' | 'amber' | 'red' | 'slate' | 'purple';
   trend?: { value: string; up: boolean };

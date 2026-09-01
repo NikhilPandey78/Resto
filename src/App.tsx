@@ -38,6 +38,8 @@ import { ActivityLogPage } from '@/pages/ActivityLogPage';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { ProfilePage } from '@/pages/ProfilePage';
 import { HelpPage } from '@/pages/HelpPage';
+import { FoodCostPage } from '@/pages/FoodCostPage';
+import { FeaturePendingPage } from '@/pages/FeaturePendingPage';
 
 function AppRoutes() {
   const { loading } = useAuth();
@@ -81,6 +83,11 @@ function AppRoutes() {
           <Route path="/recipes" element={<RecipesPage />} />
           <Route path="/menu-items" element={<MenuItemsPage />} />
           <Route path="/consumption" element={<ConsumptionPage />} />
+          <Route path="/food-cost" element={<FoodCostPage />} />
+          <Route path="/ai-insights" element={<FeaturePendingPage title="BhojMitra Intelligence" description="Data-backed restaurant insights" />} />
+          <Route path="/sales" element={<FeaturePendingPage title="Sales / POS" description="Sales and point-of-sale management" />} />
+          <Route path="/kot" element={<FeaturePendingPage title="Kitchen Order Tickets" description="Kitchen order management" />} />
+          <Route path="/tables" element={<FeaturePendingPage title="Tables" description="Restaurant table management" />} />
           <Route path="/wastage" element={<WastagePage />} />
           <Route path="/expiry" element={<ExpiryPage />} />
           <Route path="/reports" element={<ReportsPage />} />

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { History, User, Module, Calendar, Globe } from 'lucide-react';
+import { History } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth';
 import { Card, Badge, Skeleton, EmptyState, Select } from '@/components/ui';
