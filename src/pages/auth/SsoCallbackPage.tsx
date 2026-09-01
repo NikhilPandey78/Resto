@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/auth';
 import { useToast } from '@/components/ui/Toast';
 import { Button, Card } from '@/components/ui';
 
-const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:4000').replace(/\/api\/v1\/?$/, '').replace(/\/$/, '');
+const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://apis.bhojmitra.in').replace(/\/api\/v1\/?$/, '').replace(/\/$/, '');
 
 function sanitizeRedirect(url: string | null): string {
   if (!url || typeof url !== 'string') return '/dashboard';

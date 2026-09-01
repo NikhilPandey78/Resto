@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase';
 
-const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1').replace(/\/$/, '');
+const API_URL = (import.meta.env.VITE_API_URL || 'https://apis.bhojmitra.in').replace(/\/api\/v1\/?$/, '').replace(/\/$/, '');
 
 export class ApiError extends Error {
   constructor(public status: number, message: string) {
@@ -9,14 +9,28 @@ export class ApiError extends Error {
   }
 }
 
-export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
+async function getAuthToken(): Promise<string | null> {
+  if (typeof window !== 'undefined') {
+    const ssoRaw = localStorage.getItem('bhojmitra_resto_sso');
+    if (ssoRaw) {
+      try {
+        const parsed = JSON.parse(ssoRaw);
+        if (parsed?.token) return parsed.token;
+      } catch {}
+    }
+  }
   const { data: { session } } = await supabase.auth.getSession();
+  return session?.access_token || null;
+}
+
+export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const token = await getAuthToken();
   const response = await fetch(`${API_URL}${path.startsWith('/') ? path : `/${path}`}`, {
     ...options,
     headers: {
       Accept: 'application/json',
       ...(options.body ? { 'Content-Type': 'application/json' } : {}),
-      ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options.headers,
     },
   });
