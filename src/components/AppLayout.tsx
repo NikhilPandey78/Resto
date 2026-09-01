@@ -92,7 +92,7 @@ export function AppLayout() {
             <UtensilsCrossed className="h-5 w-5" />
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-bold text-slate-900 truncate">StockSage</p>
+            <p className="text-sm font-bold text-slate-900 truncate">BhojMitra</p>
             <p className="text-[10px] text-slate-400 truncate">Restaurant Inventory</p>
           </div>
         </div>

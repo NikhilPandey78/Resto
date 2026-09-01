@@ -50,7 +50,7 @@ export function LoginPage() {
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 backdrop-blur">
               <UtensilsCrossed className="h-6 w-6" />
             </div>
-            <span className="text-xl font-bold">StockSage</span>
+            <span className="text-xl font-bold">BhojMitra</span>
           </div>
           <div>
             <h1 className="text-4xl font-bold leading-tight">Restaurant Inventory,<br />Simplified.</h1>
@@ -77,7 +77,7 @@ export function LoginPage() {
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white">
               <UtensilsCrossed className="h-6 w-6" />
             </div>
-            <span className="text-xl font-bold text-slate-900">StockSage</span>
+            <span className="text-xl font-bold text-slate-900">BhojMitra</span>
           </div>
 
           <h2 className="text-2xl font-bold text-slate-900">Welcome back</h2>

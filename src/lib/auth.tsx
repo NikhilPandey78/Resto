@@ -66,8 +66,8 @@ const DEMO_SUBSCRIPTION: Subscription = {
   amount: 0,
   currency: 'INR',
   auto_renewal: false,
-  max_branches: 1,
-  max_users: 3,
+  max_branches: 2,
+  max_users: 4,
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
 };
@@ -238,8 +238,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       billing_cycle: 'monthly',
       amount: 0,
       auto_renewal: false,
-      max_branches: 1,
-      max_users: 3,
+      max_branches: 2,
+      max_users: 4,
     });
 
     return { error: null };

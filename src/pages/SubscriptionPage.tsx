@@ -8,9 +8,9 @@ import { PageHeader } from '@/components/PageHeader';
 import { formatCurrency, formatDate, daysUntil } from '@/lib/utils';
 
 const plans = [
-  { name: 'Starter', price: 999, maxBranches: 1, maxUsers: 3, features: ['1 Branch', '3 Users', 'Basic Reports', 'Email Support'] },
-  { name: 'Professional', price: 2999, maxBranches: 3, maxUsers: 10, features: ['3 Branches', '10 Users', 'Advanced Reports', 'Recipe Management', 'Priority Support'] },
-  { name: 'Enterprise', price: 7999, maxBranches: 10, maxUsers: 50, features: ['10 Branches', '50 Users', 'Custom Reports', 'API Access', 'Dedicated Manager'] },
+  { name: 'Starter', price: 499, yearlyPrice: 4790, maxBranches: 3, maxUsersPerBranch: 3, features: ['3 Branches', '3 Users per branch', '200 Inventory Items', 'Basic Reports', 'Email Support'] },
+  { name: 'Basic', price: 999, yearlyPrice: 9590, maxBranches: 5, maxUsersPerBranch: 5, features: ['5 Branches', '5 Users per branch', '500 Inventory Items', 'Basic Reports', 'Supplier Management', 'Email Support'] },
+  { name: 'Pro', price: 1999, yearlyPrice: 19190, maxBranches: 'Unlimited', maxUsersPerBranch: 'Unlimited', features: ['Unlimited Branches', 'Unlimited Users', 'Unlimited Inventory', 'Advanced Reports', 'Recipe Management', 'Food Cost Analysis', 'Priority Support'], popular: true },
 ];
 
 export function SubscriptionPage() {
@@ -154,30 +154,36 @@ export function SubscriptionPage() {
 
       {showPlans && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-slide-up">
-          {plans.map((plan) => (
-            <Card key={plan.name} className={`p-5 ${plan.name === 'Professional' ? 'border-blue-300 ring-2 ring-blue-100' : ''}`}>
-              {plan.name === 'Professional' && (
-                <Badge variant="info" className="mb-2">Current</Badge>
-              )}
-              <h3 className="text-lg font-bold text-slate-900">{plan.name}</h3>
-              <p className="text-2xl font-bold text-slate-900 mt-1">{formatCurrency(plan.price)}<span className="text-sm font-normal text-slate-400">/month</span></p>
-              <div className="space-y-2 mt-4">
-                {plan.features.map((f) => (
-                  <div key={f} className="flex items-center gap-2 text-sm text-slate-600">
-                    <Check className="h-4 w-4 text-emerald-500 flex-shrink-0" /> {f}
-                  </div>
-                ))}
-              </div>
-              <Button
-                className="w-full mt-5"
-                variant={plan.name === 'Professional' ? 'outline' : 'primary'}
-                onClick={() => handleUpgrade(plan.name)}
-                disabled={plan.name === subscription.plan}
-              >
-                {plan.name === subscription.plan ? 'Current Plan' : `Upgrade to ${plan.name}`}
-              </Button>
-            </Card>
-          ))}
+          {plans.map((plan) => {
+            const isCurrent = subscription.plan.toLowerCase() === plan.name.toLowerCase();
+            return (
+              <Card key={plan.name} className={`p-5 ${plan.popular ? 'border-blue-300 ring-2 ring-blue-100' : ''}`}>
+                {plan.popular && (
+                  <Badge variant="info" className="mb-2">Most Popular</Badge>
+                )}
+                {isCurrent && (
+                  <Badge variant="success" className="mb-2 ml-1">Current Plan</Badge>
+                )}
+                <h3 className="text-lg font-bold text-slate-900">{plan.name}</h3>
+                <p className="text-2xl font-bold text-slate-900 mt-1">{formatCurrency(plan.price)}<span className="text-sm font-normal text-slate-400">/month</span></p>
+                <div className="space-y-2 mt-4">
+                  {plan.features.map((f) => (
+                    <div key={f} className="flex items-center gap-2 text-sm text-slate-600">
+                      <Check className="h-4 w-4 text-emerald-500 flex-shrink-0" /> {f}
+                    </div>
+                  ))}
+                </div>
+                <Button
+                  className="w-full mt-5"
+                  variant={isCurrent ? 'outline' : 'primary'}
+                  onClick={() => handleUpgrade(plan.name)}
+                  disabled={isCurrent}
+                >
+                  {isCurrent ? 'Current Plan' : `Choose ${plan.name}`}
+                </Button>
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>

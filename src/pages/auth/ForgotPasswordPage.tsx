@@ -35,7 +35,7 @@ export function ForgotPasswordPage() {
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white">
             <UtensilsCrossed className="h-6 w-6" />
           </div>
-          <span className="text-xl font-bold text-slate-900">StockSage</span>
+          <span className="text-xl font-bold text-slate-900">BhojMitra</span>
         </div>
 
         {sent ? (

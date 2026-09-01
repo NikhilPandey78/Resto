@@ -9,7 +9,7 @@ import { PageHeader, statusBadge } from '@/components/PageHeader';
 import type { Branch } from '@/lib/types';
 
 export function BranchesPage() {
-  const { restaurant } = useAuth();
+  const { restaurant, subscription } = useAuth();
   const toast = useToast();
   const [loading, setLoading] = useState(true);
   const [branches, setBranches] = useState<Branch[]>([]);
@@ -28,12 +28,24 @@ export function BranchesPage() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  const openAdd = () => { setEditing(null); setForm({ name: '', code: '', address: '', city: '', state: '', postal_code: '', phone: '', manager_name: '' }); setShowModal(true); };
+  const openAdd = () => {
+    if (subscription && subscription.max_branches && branches.length >= subscription.max_branches) {
+      toast(`Branch limit reached (${subscription.max_branches} max for ${subscription.plan} plan). Please upgrade your subscription.`, 'error');
+      return;
+    }
+    setEditing(null);
+    setForm({ name: '', code: '', address: '', city: '', state: '', postal_code: '', phone: '', manager_name: '' });
+    setShowModal(true);
+  };
   const openEdit = (b: Branch) => { setEditing(b); setForm({ name: b.name, code: b.code || '', address: b.address || '', city: b.city || '', state: b.state || '', postal_code: b.postal_code || '', phone: b.phone || '', manager_name: b.manager_name || '' }); setShowModal(true); };
 
   const handleSave = async () => {
     if (!restaurant) return;
     if (!form.name) { toast('Branch name is required', 'error'); return; }
+    if (!editing && subscription && subscription.max_branches && branches.length >= subscription.max_branches) {
+      toast(`Branch limit reached (${subscription.max_branches} max). Please upgrade your subscription.`, 'error');
+      return;
+    }
     setSaving(true);
     if (editing) {
       const { error } = await supabase.from('branches').update(form).eq('id', editing.id);

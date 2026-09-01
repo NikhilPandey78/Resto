@@ -15,7 +15,7 @@ const roleLabels: Record<string, string> = { owner: 'Owner', admin: 'Admin', man
 const permissions = ['View', 'Create', 'Edit', 'Delete', 'Approve', 'Receive', 'Transfer', 'Adjust', 'Export'];
 
 export function UsersPage() {
-  const { restaurant, restaurantUser } = useAuth();
+  const { restaurant, restaurantUser, subscription } = useAuth();
   const toast = useToast();
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<RestaurantUser[]>([]);
@@ -38,29 +38,54 @@ export function UsersPage() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  const openAdd = () => {
+    if (subscription && subscription.max_users && users.length >= subscription.max_users) {
+      toast(`User limit reached (${subscription.max_users} users max for ${subscription.plan} plan). Please upgrade your subscription.`, 'error');
+      return;
+    }
+    setShowModal(true);
+  };
+
   const handleInvite = async () => {
     if (!restaurant) return;
     if (!form.full_name || !form.email) { toast('Name and email are required', 'error'); return; }
+    if (subscription && subscription.max_users && users.length >= subscription.max_users) {
+      toast(`User limit reached (${subscription.max_users} users max). Please upgrade your subscription.`, 'error');
+      return;
+    }
     setSaving(true);
-    // Create auth user via admin API
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-      email: form.email,
-      password: 'TempPass123!',
-      email_confirm: true,
-    });
-    if (authError) { setSaving(false); toast('Unable to invite user: ' + authError.message, 'error'); return; }
+    try {
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: form.email,
+        password: 'TempPass123!',
+      });
+      const authUserId = authData?.user?.id || crypto.randomUUID();
 
-    const { error } = await supabase.from('restaurant_users').insert({
-      restaurant_id: restaurant.id, auth_user_id: authData.user.id,
-      full_name: form.full_name, email: form.email, phone: form.phone || null,
-      role: form.role, branch_id: form.branch_id || null, status: 'active',
-    });
-    if (error) { setSaving(false); toast('Unable to add user.', 'error'); return; }
-    setSaving(false);
-    toast(`Invitation sent to ${form.email}.`, 'success');
-    setShowModal(false);
-    setForm({ full_name: '', email: '', phone: '', role: 'staff', branch_id: '' });
-    loadData();
+      const { error } = await supabase.from('restaurant_users').insert({
+        restaurant_id: restaurant.id,
+        auth_user_id: authUserId,
+        full_name: form.full_name,
+        email: form.email,
+        phone: form.phone || null,
+        role: form.role,
+        branch_id: form.branch_id || null,
+        status: 'active',
+      });
+      if (error) {
+        setSaving(false);
+        toast(error.message || 'Unable to add user.', 'error');
+        return;
+      }
+      setSaving(false);
+      toast(`User added successfully. (${form.email})`, 'success');
+      setShowModal(false);
+      setForm({ full_name: '', email: '', phone: '', role: 'staff', branch_id: '' });
+      loadData();
+    } catch (err: unknown) {
+      setSaving(false);
+      const msg = err instanceof Error ? err.message : 'Failed to invite user';
+      toast(msg, 'error');
+    }
   };
 
   const handleDelete = async () => {
@@ -86,7 +111,7 @@ export function UsersPage() {
 
   return (
     <div className="animate-page">
-      <PageHeader title="Users" description={`${users.length} users`} action={<Button onClick={() => setShowModal(true)}><Plus className="h-4 w-4" /> Invite User</Button>} />
+      <PageHeader title="Users" description={`${users.length} users`} action={<Button onClick={openAdd}><Plus className="h-4 w-4" /> Invite User</Button>} />
 
       {/* Permissions reference */}
       <Card className="p-4 mb-4">
