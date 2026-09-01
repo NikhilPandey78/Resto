@@ -9,6 +9,7 @@ import { SignupPage } from '@/pages/auth/SignupPage';
 import { ForgotPasswordPage } from '@/pages/auth/ForgotPasswordPage';
 import { ResetPasswordPage } from '@/pages/auth/ResetPasswordPage';
 import { OtpPage } from '@/pages/auth/OtpPage';
+import { SsoCallbackPage } from '@/pages/auth/SsoCallbackPage';
 
 import { DashboardPage } from '@/pages/DashboardPage';
 import { SubscriptionPage } from '@/pages/SubscriptionPage';
@@ -62,6 +63,7 @@ function AppRoutes() {
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/otp" element={<OtpPage />} />
+      <Route path="/sso/callback" element={<SsoCallbackPage />} />
 
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>

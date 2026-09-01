@@ -15,11 +15,19 @@ interface AuthContextValue {
   signUp: (email: string, password: string, fullName: string, restaurantName: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  setSsoSession: (
+    token: string,
+    user: User,
+    restaurant: Restaurant,
+    restaurantUser: RestaurantUser,
+    subscription: Subscription | null
+  ) => void;
 }
 
 const DEMO_EMAIL = 'demo@spicegarden.in';
 const DEMO_PASSWORD = 'demo1234';
 const DEMO_SESSION_STORAGE_KEY = 'stocksage_demo_session';
+const SSO_STORAGE_KEY = 'bhojmitra_resto_sso';
 const DEMO_USER_ID = '00000000-0000-0000-0000-000000000001';
 const DEMO_RESTAURANT_ID = '00000000-0000-0000-0000-000000000002';
 
@@ -111,6 +119,74 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSubscription(DEMO_SUBSCRIPTION);
   }, []);
 
+  const restoreSsoSession = useCallback(() => {
+    const raw = localStorage.getItem(SSO_STORAGE_KEY);
+    if (!raw) return false;
+    try {
+      const data = JSON.parse(raw);
+      if (!data?.token || !data?.user || !data?.restaurant) {
+        localStorage.removeItem(SSO_STORAGE_KEY);
+        return false;
+      }
+      const ssoSession: Session = {
+        access_token: data.token,
+        refresh_token: '',
+        expires_in: 7 * 86400,
+        expires_at: Math.floor(Date.now() / 1000) + 7 * 86400,
+        token_type: 'bearer',
+        user: data.user as User,
+      };
+      setSession(ssoSession);
+      setUser(data.user as User);
+      setRestaurant(data.restaurant as Restaurant);
+      setRestaurantUser(data.restaurantUser as RestaurantUser);
+      setSubscription((data.subscription as Subscription) ?? null);
+      return true;
+    } catch {
+      localStorage.removeItem(SSO_STORAGE_KEY);
+      return false;
+    }
+  }, []);
+
+  const setSsoSession = useCallback(
+    (
+      token: string,
+      ssoUser: User,
+      ssoRestaurant: Restaurant,
+      ssoRestaurantUser: RestaurantUser,
+      ssoSubscription: Subscription | null
+    ) => {
+      const ssoSession: Session = {
+        access_token: token,
+        refresh_token: '',
+        expires_in: 7 * 86400,
+        expires_at: Math.floor(Date.now() / 1000) + 7 * 86400,
+        token_type: 'bearer',
+        user: ssoUser,
+      };
+
+      localStorage.setItem(
+        SSO_STORAGE_KEY,
+        JSON.stringify({
+          token,
+          user: ssoUser,
+          restaurant: ssoRestaurant,
+          restaurantUser: ssoRestaurantUser,
+          subscription: ssoSubscription,
+          savedAt: Date.now(),
+        })
+      );
+
+      setSession(ssoSession);
+      setUser(ssoUser);
+      setRestaurant(ssoRestaurant);
+      setRestaurantUser(ssoRestaurantUser);
+      setSubscription(ssoSubscription);
+      setLoading(false);
+    },
+    []
+  );
+
   const loadProfile = useCallback(async (uid: string) => {
     try {
       const profile = await api.get<{ restaurant?: Restaurant; user?: RestaurantUser; subscription?: Subscription | null }>('/auth/me');
@@ -159,26 +235,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
       if (session?.user) {
+        setSession(session);
+        setUser(session.user);
         loadProfile(session.user.id).finally(() => setLoading(false));
+      } else if (restoreSsoSession()) {
+        setLoading(false);
       } else if (sessionStorage.getItem(DEMO_SESSION_STORAGE_KEY) === 'active') {
         restoreDemoSession();
         setLoading(false);
       } else {
+        setSession(null);
+        setUser(null);
+        setRestaurant(null);
+        setRestaurantUser(null);
+        setSubscription(null);
         setLoading(false);
       }
     });
 
     const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
       if (session?.user) {
+        setSession(session);
+        setUser(session.user);
         (async () => {
           await loadProfile(session.user.id);
           setLoading(false);
         })();
+      } else if (restoreSsoSession()) {
+        setLoading(false);
       } else if (sessionStorage.getItem(DEMO_SESSION_STORAGE_KEY) === 'active') {
         restoreDemoSession();
         setLoading(false);
@@ -191,7 +276,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return () => listener.subscription.unsubscribe();
-  }, [loadProfile, restoreDemoSession]);
+  }, [loadProfile, restoreDemoSession, restoreSsoSession]);
 
   const signIn = async (email: string, password: string) => {
     const normalizedEmail = email.trim().toLowerCase();
@@ -247,6 +332,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    localStorage.removeItem(SSO_STORAGE_KEY);
     sessionStorage.removeItem(DEMO_SESSION_STORAGE_KEY);
     setSession(null);
     setUser(null);
@@ -261,7 +347,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ session, user, restaurant, restaurantUser, subscription, loading, signIn, signUp, signOut, refreshProfile }}
+      value={{
+        session,
+        user,
+        restaurant,
+        restaurantUser,
+        subscription,
+        loading,
+        signIn,
+        signUp,
+        signOut,
+        refreshProfile,
+        setSsoSession,
+      }}
     >
       {children}
     </AuthContext.Provider>
