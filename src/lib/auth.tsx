@@ -28,6 +28,7 @@ const DEMO_EMAIL = 'demo@spicegarden.in';
 const DEMO_PASSWORD = 'demo1234';
 const DEMO_SESSION_STORAGE_KEY = 'stocksage_demo_session';
 const SSO_STORAGE_KEY = 'bhojmitra_resto_sso';
+const API_URL = (import.meta.env.VITE_API_URL || 'https://apis.bhojmitra.in').replace(/\/api\/v1\/?$/, '').replace(/\/$/, '');
 const DEMO_USER_ID = '00000000-0000-0000-0000-000000000001';
 const DEMO_RESTAURANT_ID = '00000000-0000-0000-0000-000000000002';
 
@@ -288,46 +289,123 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error: null };
     }
 
-    const { error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
-    return { error: error?.message ?? null };
+    try {
+      const loginRes = await fetch(`${API_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: normalizedEmail, password }),
+      });
+
+      const loginData = await loginRes.json().catch(() => null);
+
+      if (loginRes.ok && loginData?.token) {
+        const ssoRes = await fetch(`${API_URL}/api/auth/my-resto-sso`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${loginData.token}`,
+          },
+        });
+
+        const ssoData = await ssoRes.json().catch(() => null);
+
+        if (ssoData?.code) {
+          const exchangeRes = await fetch(`${API_URL}/api/auth/sso/exchange`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code: ssoData.code }),
+          });
+          const exchangeData = await exchangeRes.json().catch(() => null);
+
+          if (exchangeRes.ok && exchangeData?.success) {
+            setSsoSession(
+              exchangeData.token,
+              exchangeData.user,
+              exchangeData.restaurant,
+              exchangeData.restaurantUser,
+              exchangeData.subscription
+            );
+            return { error: null };
+          }
+        }
+      } else if (loginData?.error) {
+        return { error: loginData.error };
+      }
+    } catch {
+      // Backend connection issue; proceed to fallback
+    }
+
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
+      if (!error) return { error: null };
+      return { error: error.message };
+    } catch (err) {
+      return { error: err instanceof Error ? err.message : 'Invalid email or password.' };
+    }
   };
 
   const signUp = async (email: string, password: string, fullName: string, restaurantName: string) => {
-    const { data, error } = await supabase.auth.signUp({ email, password });
-    if (error) return { error: error.message };
+    const normalizedEmail = email.trim().toLowerCase();
+    try {
+      const res = await fetch(`${API_URL}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          owner_name: fullName,
+          restaurant_name: restaurantName,
+          email: normalizedEmail,
+          phone: '',
+          password,
+        }),
+      });
+      const data = await res.json().catch(() => null);
+      if (res.ok && data?.token) {
+        return await signIn(normalizedEmail, password);
+      }
+      if (data?.error) return { error: data.error };
+    } catch {
+      // Backend fallback
+    }
 
-    const userId = data.user?.id;
-    if (!userId) return { error: 'Failed to create account.' };
+    try {
+      const { data, error } = await supabase.auth.signUp({ email, password });
+      if (error) return { error: error.message };
 
-    const { data: rest } = await supabase
-      .from('restaurants')
-      .insert({ name: restaurantName, email, status: 'active' })
-      .select()
-      .single();
+      const userId = data.user?.id;
+      if (!userId) return { error: 'Failed to create account.' };
 
-    await supabase.from('restaurant_users').insert({
-      restaurant_id: rest.id,
-      auth_user_id: userId,
-      full_name: fullName,
-      email,
-      role: 'owner',
-      status: 'active',
-    });
+      const { data: rest } = await supabase
+        .from('restaurants')
+        .insert({ name: restaurantName, email, status: 'active' })
+        .select()
+        .single();
 
-    await supabase.from('subscriptions').insert({
-      restaurant_id: rest.id,
-      plan: 'trial',
-      status: 'trial',
-      start_date: new Date().toISOString().slice(0, 10),
-      expiry_date: new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10),
-      billing_cycle: 'monthly',
-      amount: 0,
-      auto_renewal: false,
-      max_branches: 2,
-      max_users: 4,
-    });
+      await supabase.from('restaurant_users').insert({
+        restaurant_id: rest.id,
+        auth_user_id: userId,
+        full_name: fullName,
+        email,
+        role: 'owner',
+        status: 'active',
+      });
 
-    return { error: null };
+      await supabase.from('subscriptions').insert({
+        restaurant_id: rest.id,
+        plan: 'trial',
+        status: 'trial',
+        start_date: new Date().toISOString().slice(0, 10),
+        expiry_date: new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10),
+        billing_cycle: 'monthly',
+        amount: 0,
+        auto_renewal: false,
+        max_branches: 2,
+        max_users: 4,
+      });
+
+      return { error: null };
+    } catch (err) {
+      return { error: err instanceof Error ? err.message : 'Failed to create account.' };
+    }
   };
 
   const signOut = async () => {
