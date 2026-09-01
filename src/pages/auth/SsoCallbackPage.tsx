@@ -70,7 +70,8 @@ export function SsoCallbackPage() {
           data.user,
           data.restaurant,
           data.restaurantUser,
-          data.subscription
+          data.subscription,
+          data.user?.id  // Pass partner_id explicitly
         );
 
         toast(`Welcome, ${data.restaurantUser?.full_name || data.restaurant?.name}!`, 'success');

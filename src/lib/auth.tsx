@@ -7,6 +7,7 @@ import { api, isApiUnavailable } from '@/lib/api';
 interface AuthContextValue {
   session: Session | null;
   user: User | null;
+  partnerId: string | null;
   restaurant: Restaurant | null;
   restaurantUser: RestaurantUser | null;
   subscription: Subscription | null;
@@ -20,7 +21,8 @@ interface AuthContextValue {
     user: User,
     restaurant: Restaurant,
     restaurantUser: RestaurantUser,
-    subscription: Subscription | null
+    subscription: Subscription | null,
+    partnerId?: string
   ) => void;
 }
 
@@ -106,6 +108,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [partnerId, setPartnerId] = useState<string | null>(null);
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [restaurantUser, setRestaurantUser] = useState<RestaurantUser | null>(null);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
@@ -139,6 +142,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       };
       setSession(ssoSession);
       setUser(data.user as User);
+      setPartnerId(data.partnerId || data.user?.id || null);
       setRestaurant(data.restaurant as Restaurant);
       setRestaurantUser(data.restaurantUser as RestaurantUser);
       setSubscription((data.subscription as Subscription) ?? null);
@@ -155,7 +159,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       ssoUser: User,
       ssoRestaurant: Restaurant,
       ssoRestaurantUser: RestaurantUser,
-      ssoSubscription: Subscription | null
+      ssoSubscription: Subscription | null,
+      partnerId?: string
     ) => {
       const ssoSession: Session = {
         access_token: token,
@@ -166,6 +171,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user: ssoUser,
       };
 
+      // Extract partner_id from token or use provided value or user.id
+      const extractedPartnerId = partnerId || ssoUser?.id || null;
+
       localStorage.setItem(
         SSO_STORAGE_KEY,
         JSON.stringify({
@@ -174,12 +182,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           restaurant: ssoRestaurant,
           restaurantUser: ssoRestaurantUser,
           subscription: ssoSubscription,
+          partnerId: extractedPartnerId,
           savedAt: Date.now(),
         })
       );
 
       setSession(ssoSession);
       setUser(ssoUser);
+      setPartnerId(extractedPartnerId);
       setRestaurant(ssoRestaurant);
       setRestaurantUser(ssoRestaurantUser);
       setSubscription(ssoSubscription);
@@ -428,6 +438,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         session,
         user,
+        partnerId,
         restaurant,
         restaurantUser,
         subscription,
